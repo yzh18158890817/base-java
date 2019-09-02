@@ -2,7 +2,8 @@ package se.base;
 
 import java.text.DecimalFormat;
 import java.util.Scanner;
-import java.util.stream.Stream;
+
+import static javax.xml.bind.DatatypeConverter.parseString;
 
 /**
  * @author yzh
@@ -16,9 +17,9 @@ public class Calculate {
         while (true) {
             Long result = null;
             String symbol = null;
-            Long num1 = null;
-            Long num2 = null;
-            getCalculate(scanner, symbol, num1, num2,df);
+            String num1 = null;
+            String num2 = null;
+            getCalculate(scanner, symbol, num1, num2, df);
             System.out.println("是否继续（y/n）");
             String next = scanner.next();
             if (next.equalsIgnoreCase("y")) {
@@ -30,7 +31,7 @@ public class Calculate {
         }
     }
 
-    private static void getCalculate(Scanner scanner, String symbol, Long num1, Long num2, DecimalFormat df) {
+    private static void getCalculate(Scanner scanner, String symbol, String num1, String num2, DecimalFormat df) {
         Long result;
         System.out.print("请输入算式：");
         String str = scanner.next();
@@ -47,47 +48,97 @@ public class Calculate {
             System.out.println("算式非法，请重新输入");
             getCalculate(scanner, symbol, num1, num2, df);
         }
+
+        result = judgeFormula(str, scanner, num1, num2, df, symbol);
+
+//        System.out.println(getSymbol(str,scanner,symbol,num1,num2,df)); 
+        System.out.println(result);
+    }
+
+    private static Long judgeFormula(String str, Scanner scanner, String num1, String num2, DecimalFormat df, String symbol) {
+        Long result = 0L;
+        String lastSymbol = "+";
+        if (!str.contains("(")) {
+            if (!isNum(str) && !isNum(str.substring(0, 1))) {
+                lastSymbol = str.substring(0, 1);
+                str = str.substring(1, str.length());
+            }
+            for (int i = 0; i < str.length(); i++) {
+                if (!Character.isDigit(str.charAt(i))) {
+                    symbol = str.charAt(i) + "";
+                    num1 = lastSymbol + str.substring(0, i);
+                    num2 = str.substring(i, str.length());
+                    //判断符号
+                    return getSymbol(str, scanner, symbol, num1, num2, df, result);
+                }
+            }
+        } else {
+            return null;
+        }
+        return null;
+    }
+
+    public static boolean isNum(String str) {
         for (int i = 0; i < str.length(); i++) {
             if (!Character.isDigit(str.charAt(i))) {
-                symbol = str.charAt(i) + "";
-                String str1 = str.substring(0, i);
-                for (char c1 : str1.toCharArray()) {
-                    if (!Character.isDigit(c1)) {
-                        System.out.println("算式非法，请重新输入");
-                        getCalculate(scanner, symbol, num1, num2, df);
-                    }
-                }
-                num1 = Long.parseLong(str1);
-                String str2 = str.substring(i + 1, str.length());
-                for (char c2 : str2.toCharArray()) {
-                    if (!Character.isDigit(c2)) {
-                        System.out.println("算式非法，请重新输入");
-                        getCalculate(scanner, symbol, num1, num2, df);
-                    }
-                }
-                num2 = Long.parseLong(str2);
+                return false;
             }
         }
+        return true;
+    }
+
+    private static Long getSymbol(String str, Scanner scanner, String symbol, String num1, String num2, DecimalFormat df, Long result) {
         switch (symbol) {
             case "+":
-                result = num1 + num2;
-                System.out.println("算式结果为："+result);
-                break;
+                return getAdd(scanner, symbol, num1, num2, df, result);
             case "-":
-                result = num1 - num2;
-                System.out.println("算式结果为："+result);
-                break;
+                return getAdd(scanner, symbol, num1, num2, df, result);
             case "*":
-                result = num1 * num2;
-                System.out.println("算式结果为："+result);
-                break;
+                String parseString = getParseString(str);
+                judgeFormula(str, scanner, num1, num2, df, symbol);
+                String lastSymbol = num1.substring(0, 1);
+                String thisSymbol = num2.substring(0, 1);
+                return result*Long.parseLong(num1)+Long.parseLong(parseString);
             case "/":
-                System.out.println("算式结果为："+df.format((double)num1 / num2));
-                break;
+                if (isNum(num2)) {
+                    result = Long.parseLong(num1) / Long.parseLong(num2);
+                } else {
+                    str = num2;
+                    result = Long.parseLong(num1) / judgeFormula(str, scanner, num1, num2, df, symbol);
+                }
+                return result;
+//                System.out.println("算式结果为：" + df.format((double) num1 / num2));
             default:
-                System.out.println("算式非法，请重新输入");
                 getCalculate(scanner, symbol, num1, num2, df);
+                return null;
         }
+    }
+
+    private static String getParseString(String str) {
+        String lastSymbol = str.substring(0, 1);
+        if (isNum(lastSymbol)) {
+            return lastSymbol;
+        }
+        str = str.substring(1, str.length());
+        if (!isNum(str)) {
+            for (int i = 0; i < str.length(); i++) {
+                if (Character.isDigit(str.charAt(i))) {
+                    return lastSymbol+str.substring(0, i);
+                }
+            }
+        }
+        return str;
+    }
+
+    private static Long getAdd(Scanner scanner, String symbol, String num1, String num2, DecimalFormat df, Long result) {
+        String str;
+        if (!isNum(num2.substring(1, num2.length()))) {
+            str = num2;
+            result = result + Long.parseLong(num1) + judgeFormula(str, scanner, num1, num2, df, symbol);
+        } else {
+            result = result + Long.parseLong(num1) + Long.parseLong(num2);
+        }
+        return result;
     }
 
     private static DecimalFormat setCount(Scanner scanner) {
@@ -99,7 +150,7 @@ public class Calculate {
             for (int i = 0; i < count; i++) {
                 strCount = strCount + "0";
             }
-            df= new DecimalFormat(strCount);
+            df = new DecimalFormat(strCount);
         } else {
             df = new DecimalFormat("0");
         }

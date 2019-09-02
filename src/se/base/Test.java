@@ -8,7 +8,9 @@ import java.text.DecimalFormat;
  */
 public class Test {
     public static void main(String[] args) {
-        System.out.println(Math.round(((double) 7/8)*10000)/10000.0);
+        String re = "1*2+3";
+        System.out.println(1^9);
+//        System.out.println(Math.round(((double) 7/8)*10000)/10000.0);
 //        DecimalFormat df = new DecimalFormat("0.00");
 //        System.out.println(df.format((double) 7 / 8));
 //        Humen s = new Student();7/8
